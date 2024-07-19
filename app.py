@@ -13,15 +13,11 @@ genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
 
 def optimize_portfolio(tickers, start_date, end_date):
     try:
-        df = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
+        df = yf.download(tickers, start=start_date, end=end_date, progress=False)['Adj Close']
     except Exception as e:
-        st.error(f"An error occurred while downloading data: {e}")
+        st.error(f"An error occurred while downloading data: {str(e)}")
         return None, None, None, None
     
-    if df.empty:
-        st.error("No data returned. Please check the ticker symbols and date range.")
-        return None, None, None, None
-
     df.index = pd.to_datetime(df.index)
     
     cov_matrix = df.pct_change().apply(lambda x: np.log(1 + x)).cov()
@@ -55,7 +51,6 @@ def optimize_portfolio(tickers, start_date, end_date):
     optimal_risky_port = portfolios.iloc[((portfolios['Returns'] - rf) / portfolios['Volatility']).idxmax()]
     
     return df, portfolios, min_vol_port, optimal_risky_port
-
 
 def explain_portfolio_allocation(portfolio_weights, company_list):
     allocation_str = ", ".join([f"{company}: {weight:.2%}" for company, weight in zip(company_list, portfolio_weights)])
@@ -91,34 +86,35 @@ end_date = st.date_input('End Date', pd.to_datetime('2024-01-01'))
 if st.button('Optimize Portfolio'):
     tickers_list = tickers.split(',')
     df, portfolios, min_vol_port, optimal_risky_port = optimize_portfolio(tickers_list, start_date, end_date)
-
-    optimal_weights = optimal_risky_port[df.columns + ' weight'].values
-    explanation = explain_portfolio_allocation(optimal_weights, df.columns.tolist())
-
-    fig, ax = plt.subplots(figsize=(10, 10))
-    ax.scatter(portfolios['Volatility'], portfolios['Returns'], marker='o', s=10, alpha=0.3)
-    ax.scatter(min_vol_port['Volatility'], min_vol_port['Returns'], color='r', marker='*', s=500)
-    ax.scatter(optimal_risky_port['Volatility'], optimal_risky_port['Returns'], color='b', marker='*', s=500)
-    ax.set_xlabel('Volatility')
-    ax.set_ylabel('Returns')
-    img = io.BytesIO()
-    plt.savefig(img, format='png')
-    img.seek(0)
-    plt.close()
-
-    st.image(img, caption='Optimal Portfolio', use_column_width=True)
     
-    # Plot the pie chart of the optimal portfolio allocation
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.pie(optimal_weights, labels=df.columns, autopct='%1.1f%%')
-    ax.set_title("Optimal Portfolio Allocation")
-    st.pyplot(fig)
+    if df is not None and portfolios is not None:
+        optimal_weights = optimal_risky_port[[col for col in portfolios.columns if 'weight' in col]].values
+        explanation = explain_portfolio_allocation(optimal_weights, df.columns.tolist())
 
-    st.markdown("### Explanation of the Optimal Portfolio Allocation")
-    st.markdown(explanation)
-    
-    # Explanation for the minimum volatility portfolio if desired
-    min_vol_weights = min_vol_port[df.columns + ' weight'].values
-    min_vol_explanation = explain_portfolio_allocation(min_vol_weights, df.columns.tolist())
-    st.markdown("### Explanation of the Minimum Volatility Portfolio Allocation")
-    st.markdown(min_vol_explanation)
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.scatter(portfolios['Volatility'], portfolios['Returns'], marker='o', s=10, alpha=0.3)
+        ax.scatter(min_vol_port['Volatility'], min_vol_port['Returns'], color='r', marker='*', s=500)
+        ax.scatter(optimal_risky_port['Volatility'], optimal_risky_port['Returns'], color='b', marker='*', s=500)
+        ax.set_xlabel('Volatility')
+        ax.set_ylabel('Returns')
+        img = io.BytesIO()
+        plt.savefig(img, format='png')
+        img.seek(0)
+        plt.close()
+
+        st.image(img, caption='Optimal Portfolio', use_column_width=True)
+        
+        # Plot the pie chart of the optimal portfolio allocation
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.pie(optimal_weights.flatten(), labels=df.columns, autopct='%1.1f%%')
+        ax.set_title("Optimal Portfolio Allocation")
+        st.pyplot(fig)
+
+        st.markdown("### Explanation of the Optimal Portfolio Allocation")
+        st.markdown(explanation)
+        
+        # Explanation for the minimum volatility portfolio if desired
+        min_vol_weights = min_vol_port[[col for col in portfolios.columns if 'weight' in col]].values
+        min_vol_explanation = explain_portfolio_allocation(min_vol_weights, df.columns.tolist())
+        st.markdown("### Explanation of the Minimum Volatility Portfolio Allocation")
+        st.markdown(min_vol_explanation)
