@@ -4,3 +4,4 @@ matplotlib
 pandas
 numpy
 google-api-python-client
+google.generativeai
