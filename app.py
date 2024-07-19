@@ -12,7 +12,16 @@ os.environ['GOOGLE_API_KEY'] = 'AIzaSyA6e6zHO19FS8T06wU4Wly4d2vY68GRQqM'
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
 
 def optimize_portfolio(tickers, start_date, end_date):
-    df = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
+    try:
+        df = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
+    except Exception as e:
+        st.error(f"An error occurred while downloading data: {e}")
+        return None, None, None, None
+    
+    if df.empty:
+        st.error("No data returned. Please check the ticker symbols and date range.")
+        return None, None, None, None
+
     df.index = pd.to_datetime(df.index)
     
     cov_matrix = df.pct_change().apply(lambda x: np.log(1 + x)).cov()
@@ -46,6 +55,7 @@ def optimize_portfolio(tickers, start_date, end_date):
     optimal_risky_port = portfolios.iloc[((portfolios['Returns'] - rf) / portfolios['Volatility']).idxmax()]
     
     return df, portfolios, min_vol_port, optimal_risky_port
+
 
 def explain_portfolio_allocation(portfolio_weights, company_list):
     allocation_str = ", ".join([f"{company}: {weight:.2%}" for company, weight in zip(company_list, portfolio_weights)])
