@@ -46,9 +46,11 @@ def optimize_portfolio(tickers, start_date, end_date):
         data[symbol + ' weight'] = [w[counter] for w in p_weights]
     
     portfolios = pd.DataFrame(data)
-    min_vol_port = portfolios.iloc[portfolios['Volatility'].idxmin()]
-    rf = 0.01
+   min_vol_port = portfolios.iloc[portfolios['Volatility'].idxmin()]
     optimal_risky_port = portfolios.iloc[((portfolios['Returns'] - rf) / portfolios['Volatility']).idxmax()]
+
+    return df, portfolios, min_vol_port, optimal_risky_port
+
     
     return df, portfolios, min_vol_port, optimal_risky_port
 
