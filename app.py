@@ -14,6 +14,8 @@ genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
 def optimize_portfolio(tickers, start_date, end_date):
     try:
         df = yf.download(tickers, start=start_date, end=end_date, progress=False)['Adj Close']
+        if isinstance(df, pd.Series):
+            df = df.to_frame()
         df = df.dropna(axis=1, how='all')  # Drop columns with all NaN values
     except Exception as e:
         st.error(f"An error occurred while downloading data: {str(e)}")
