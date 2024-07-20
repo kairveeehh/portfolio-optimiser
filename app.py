@@ -85,7 +85,7 @@ start_date = st.date_input('Start Date', pd.to_datetime('2019-01-01'))
 end_date = st.date_input('End Date', pd.to_datetime('2024-01-01'))
 
 if st.button('Optimize Portfolio'):
-    tickers_list = tickers.split(',')
+    tickers_list = tickers.upper().split(',')  # Convert to uppercase
     df, portfolios, min_vol_port, optimal_risky_port = optimize_portfolio(tickers_list, start_date, end_date)
     
     if df is not None and portfolios is not None:
