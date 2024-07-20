@@ -30,6 +30,8 @@ def optimize_portfolio(tickers, start_date, end_date):
     p_weights = []
     num_assets = len(df.columns)
     num_portfolios = 10000
+    rf = 0.01  # Define the risk-free rate
+
     for portfolio in range(num_portfolios):
         weights = np.random.random(num_assets)
         weights = weights / np.sum(weights)
@@ -49,9 +51,6 @@ def optimize_portfolio(tickers, start_date, end_date):
     min_vol_port = portfolios.iloc[portfolios['Volatility'].idxmin()]
     optimal_risky_port = portfolios.iloc[((portfolios['Returns'] - rf) / portfolios['Volatility']).idxmax()]
 
-    return df, portfolios, min_vol_port, optimal_risky_port
-
-    
     return df, portfolios, min_vol_port, optimal_risky_port
 
 def explain_portfolio_allocation(portfolio_weights, company_list):
@@ -90,7 +89,7 @@ if st.button('Optimize Portfolio'):
     df, portfolios, min_vol_port, optimal_risky_port = optimize_portfolio(tickers_list, start_date, end_date)
     
     if df is not None and portfolios is not None:
-        optimal_weights = optimal_risky_port[[col for col in portfolios.columns if 'weight' in col]].values
+        optimal_weights = optimal_risky_port[[col for col in portfolios.columns if 'weight' in col]].values.flatten()
         explanation = explain_portfolio_allocation(optimal_weights, df.columns.tolist())
 
         fig, ax = plt.subplots(figsize=(10, 10))
@@ -108,7 +107,7 @@ if st.button('Optimize Portfolio'):
         
         # Plot the pie chart of the optimal portfolio allocation
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.pie(optimal_weights.flatten(), labels=df.columns, autopct='%1.1f%%')
+        ax.pie(optimal_weights, labels=df.columns, autopct='%1.1f%%')
         ax.set_title("Optimal Portfolio Allocation")
         st.pyplot(fig)
 
@@ -116,7 +115,7 @@ if st.button('Optimize Portfolio'):
         st.markdown(explanation)
         
         # Explanation for the minimum volatility portfolio if desired
-        min_vol_weights = min_vol_port[[col for col in portfolios.columns if 'weight' in col]].values
+        min_vol_weights = min_vol_port[[col for col in portfolios.columns if 'weight' in col]].values.flatten()
         min_vol_explanation = explain_portfolio_allocation(min_vol_weights, df.columns.tolist())
         st.markdown("### Explanation of the Minimum Volatility Portfolio Allocation")
         st.markdown(min_vol_explanation)
