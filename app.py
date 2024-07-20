@@ -14,8 +14,13 @@ genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
 def optimize_portfolio(tickers, start_date, end_date):
     try:
         df = yf.download(tickers, start=start_date, end=end_date, progress=False)['Adj Close']
+        df = df.dropna(axis=1, how='all')  # Drop columns with all NaN values
     except Exception as e:
         st.error(f"An error occurred while downloading data: {str(e)}")
+        return None, None, None, None
+    
+    if df.empty:
+        st.error("No data found for the provided tickers.")
         return None, None, None, None
     
     df.index = pd.to_datetime(df.index)
@@ -85,7 +90,7 @@ start_date = st.date_input('Start Date', pd.to_datetime('2019-01-01'))
 end_date = st.date_input('End Date', pd.to_datetime('2024-01-01'))
 
 if st.button('Optimize Portfolio'):
-    tickers_list = tickers.upper().split(',')  # Convert to uppercase
+    tickers_list = [ticker.strip().upper() for ticker in tickers.split(',')]  # Normalize tickers to uppercase
     df, portfolios, min_vol_port, optimal_risky_port = optimize_portfolio(tickers_list, start_date, end_date)
     
     if df is not None and portfolios is not None:
